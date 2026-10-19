@@ -1,0 +1,5 @@
+# CG Project Rules for Antigravity Agent
+1. NEVER overwrite or delete the existing warm cream UI palette (#FAF6F0, #F4EFE6, #D65A47 coral, #E8E4F3 lavender) or existing layout components in `app/` and `components/`. Only edit in-place or add new modular files.
+2. All custom shapes drawn in the Graphics Lab MUST be backed by explicit Computer Graphics algorithms in `lib/cg-engine.ts` (DDA Line, Bresenham Line, Midpoint Circle, Midpoint Ellipse, and Cubic Bézier).
+3. All 2D object transformations (Translation, Rotation, Scaling, Shearing) MUST compute a 3x3 Homogeneous Transformation Matrix so the live matrix values can be shown in the Right Inspector.
+4. Use `npm install --legacy-peer-deps` if any React 19 peer dependency conflicts occur with `package.json`.

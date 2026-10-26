@@ -14,6 +14,11 @@ import {
   getBlockEndState,
   TransformBlock,
 } from '@/lib/cg-engine'
+import {
+  drawBackgroundToCanvas,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+} from '@/lib/cg-canvas-renderer'
 
 export type SceneTheme = 'blank' | 'beach' | 'countryside' | 'midnight' | 'custom'
 
@@ -121,6 +126,18 @@ export default function StageCanvas({
 }: StageCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageCanvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  // Explicitly lock stage HTML5 canvas drawing buffer to 960 × 540 and render environment backdrop
+  useEffect(() => {
+    const canvas = stageCanvasRef.current
+    if (!canvas) return
+    canvas.width = CANVAS_WIDTH
+    canvas.height = CANVAS_HEIGHT
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    drawBackgroundToCanvas(ctx, CANVAS_WIDTH, CANVAS_HEIGHT, theme, customConfig, grid)
+  }, [theme, customConfig, grid])
 
   // Infinite Canvas Pan state
   const [isPanning, setIsPanning] = useState(false)
@@ -734,23 +751,39 @@ export default function StageCanvas({
           className={`artboard theme-${theme}`}
           style={{
             position: 'absolute',
-            inset: 0,
-            width: '960px',
-            height: '540px',
+            top: 0,
+            left: 0,
+            width: `${CANVAS_WIDTH}px`,
+            height: `${CANVAS_HEIGHT}px`,
             overflow: 'hidden',
-            border: '8px solid #fffaf4',
+            border: 'none',
             borderRadius: '8px',
-            boxShadow: '0 14px 30px rgba(123, 107, 89, 0.18)',
+            boxShadow: '0 0 0 8px #fffaf4, 0 14px 30px rgba(123, 107, 89, 0.18)',
             backgroundColor: theme === 'blank' ? '#FFFAF3' : '#CCE1E4',
-            backgroundImage: grid
-              ? 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)'
-              : 'none',
-            backgroundSize: '32px 32px',
+            boxSizing: 'border-box',
           }}
           onPointerDown={handleArtboardPointerDown}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
+          {/* Locked 960 × 540 HTML5 Stage Canvas Buffer */}
+          <canvas
+            ref={stageCanvasRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            className="stage-canvas-buffer"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: `${CANVAS_WIDTH}px`,
+              height: `${CANVAS_HEIGHT}px`,
+              pointerEvents: 'none',
+              zIndex: 0,
+              display: 'block',
+            }}
+          />
+
       {/* Target Picking floating indicator banner */}
       {isPickingTarget && (
         <div
@@ -795,316 +828,6 @@ export default function StageCanvas({
           </button>
         </div>
       )}
-      {/* 
-        PURE ENVIRONMENT BACKDROPS ONLY
-        Notice: NO movable objects (no hardcoded sun, cottage, car, or trees) are drawn here!
-      */}
-
-      {/* 1. Blank Canvas */}
-      {theme === 'blank' && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: '#FFFAF3',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: '12px',
-              left: '16px',
-              fontFamily: 'monospace',
-              fontSize: '10px',
-              color: '#B0A59A',
-            }}
-          >
-            ORIGIN: (0, 0) · 960 × 540 BLANK ARTBOARD
-          </div>
-        </div>
-      )}
-
-      {/* 2. Sunny Beach */}
-      {theme === 'beach' && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(#70BFD1 0%, #BFE7F0 48%, #1D7C9E 48%, #2086AA 60%, #E8C197 60%, #F5D7B3 100%)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          {/* Distant palm/coastline silhouette on horizon */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '46%',
-              right: '15%',
-              width: '120px',
-              height: '18px',
-              background: '#2F626E',
-              borderRadius: '50% 50% 0 0',
-              opacity: 0.5,
-            }}
-          />
-          {/* Ocean shoreline wave foam */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '59.5%',
-              left: 0,
-              right: 0,
-              height: '6px',
-              background: '#FFFFFFCC',
-              borderRadius: '3px',
-              filter: 'blur(1px)',
-            }}
-          />
-        </div>
-      )}
-
-      {/* 3. Countryside Scenery */}
-      {theme === 'countryside' && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(#CCE1E4 0%, #DCEBEC 54%, #96BD8D 54%)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          {/* Rolling green hills backdrop */}
-          <div
-            style={{
-              position: 'absolute',
-              left: '-10%',
-              bottom: '-12%',
-              height: '46%',
-              width: '75%',
-              borderRadius: '50% 50% 0 0',
-              background: '#96BD8D',
-              zIndex: 1,
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              right: '-15%',
-              bottom: '-14%',
-              height: '46%',
-              width: '75%',
-              borderRadius: '50% 50% 0 0',
-              background: '#73A272',
-              zIndex: 2,
-            }}
-          />
-          {/* Dirt path along the bottom */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '24px',
-              background: '#E6C89F',
-              zIndex: 3,
-            }}
-          />
-        </div>
-      )}
-
-      {/* 4. Midnight Highway */}
-      {theme === 'midnight' && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(#121624 0%, #1E2638 64%, #22252E 64%)',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          {/* Distant stars */}
-          {[12, 28, 44, 62, 78, 91, 20, 50, 72].map((left, idx) => (
-            <span
-              key={idx}
-              style={{
-                position: 'absolute',
-                left: `${left}%`,
-                top: `${12 + (idx % 4) * 12}%`,
-                width: '2px',
-                height: '2px',
-                background: '#FFFFFF',
-                borderRadius: '50%',
-                opacity: 0.85,
-              }}
-            />
-          ))}
-
-          {/* Distant flat city silhouette horizon line */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '36%',
-              left: 0,
-              right: 0,
-              height: '45px',
-              display: 'flex',
-              alignItems: 'flex-end',
-              gap: '6px',
-              padding: '0 15px',
-              opacity: 0.45,
-            }}
-          >
-            {[45, 60, 35, 75, 50, 65, 40, 80, 55, 70, 48, 62, 50, 85].map((h, i) => (
-              <div
-                key={i}
-                style={{
-                  width: `${18 + (i % 3) * 8}px`,
-                  height: `${h}px`,
-                  background: '#0B0E17',
-                  borderRadius: '2px 2px 0 0',
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Flat asphalt highway */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '36%',
-              background: '#22252E',
-              borderTop: '2px solid #2F333E',
-              zIndex: 2,
-            }}
-          >
-            {/* Dashed center lane divider */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: 0,
-                right: 0,
-                height: '3px',
-                background: 'repeating-linear-gradient(90deg, #F5B941 0, #F5B941 24px, transparent 24px, transparent 48px)',
-                opacity: 0.75,
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* 5. Custom Background */}
-      {theme === 'custom' && customConfig && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: `linear-gradient(${customConfig.skyTop} 0%, ${customConfig.skyBottom} ${customConfig.horizonHeight}%)`,
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          {customConfig.hasStars && (
-            <div style={{ position: 'absolute', inset: 0 }}>
-              {[15, 30, 48, 65, 82, 92, 22, 55, 75].map((l, i) => (
-                <span
-                  key={i}
-                  style={{
-                    position: 'absolute',
-                    left: `${l}%`,
-                    top: `${10 + (i % 3) * 14}%`,
-                    width: '2px',
-                    height: '2px',
-                    background: '#FFF',
-                    borderRadius: '50%',
-                    opacity: 0.85,
-                  }}
-                />
-              ))}
-            </div>
-          )}
-
-          {customConfig.horizonStyle === 'flat' && (
-            <div
-              style={{
-                position: 'absolute',
-                top: `${customConfig.horizonHeight}%`,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: customConfig.groundColor,
-              }}
-            />
-          )}
-
-          {customConfig.horizonStyle === 'hills' && (
-            <div
-              style={{
-                position: 'absolute',
-                top: `${customConfig.horizonHeight - 14}%`,
-                bottom: 0,
-                left: '-10%',
-                right: '-10%',
-                borderRadius: '50% 50% 0 0',
-                background: customConfig.groundColor,
-              }}
-            />
-          )}
-
-          {customConfig.horizonStyle === 'waves' && (
-            <div
-              style={{
-                position: 'absolute',
-                top: `${customConfig.horizonHeight}%`,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: customConfig.groundColor,
-                borderTop: '3px solid rgba(255,255,255,0.7)',
-              }}
-            />
-          )}
-
-          {customConfig.horizonStyle === 'dunes' && (
-            <div
-              style={{
-                position: 'absolute',
-                top: `${customConfig.horizonHeight - 10}%`,
-                bottom: 0,
-                left: '-5%',
-                right: '-5%',
-                borderRadius: '35% 65% 0 0',
-                background: customConfig.groundColor,
-              }}
-            />
-          )}
-
-          {customConfig.horizonStyle === 'grid' && (
-            <div
-              style={{
-                position: 'absolute',
-                top: `${customConfig.horizonHeight}%`,
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: customConfig.groundColor,
-                backgroundImage:
-                  'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }}
-            />
-          )}
-        </div>
-      )}
 
       {/* Render All Selectable Scene Objects */}
       {objects.map(obj => {
@@ -1119,12 +842,7 @@ export default function StageCanvas({
         const renderSkewX = obj.worldSkewX ?? obj.skewX
 
         const pivot = getObjectPivot(obj)
-        const leftPct = (renderX / 960) * 100
-        const topPct = (renderY / 540) * 100
-        const widthPct = (obj.w / 960) * 100
-        const heightPct = (obj.h / 540) * 100
-
-        const transformOriginStr = `${(pivot.x / obj.w) * 100}% ${(pivot.y / obj.h) * 100}%`
+        const transformOriginStr = `${pivot.x}px ${pivot.y}px`
         const transformStyle = `rotate(${renderRot}deg) scale(${renderSx}, ${renderSy}) skew(${renderSkewX}deg, ${obj.skewY}deg)`
 
         return (
@@ -1140,10 +858,10 @@ export default function StageCanvas({
             }}
             style={{
               position: 'absolute',
-              left: `${leftPct}%`,
-              top: `${topPct}%`,
-              width: `${widthPct}%`,
-              height: `${heightPct}%`,
+              left: `${renderX}px`,
+              top: `${renderY}px`,
+              width: `${obj.w}px`,
+              height: `${obj.h}px`,
               transform: transformStyle,
               transformOrigin: transformOriginStr,
               zIndex: isSelected ? 15 : 5,
@@ -1181,10 +899,10 @@ export default function StageCanvas({
           <div
             style={{
               position: 'absolute',
-              left: `${(minX / 960) * 100}%`,
-              top: `${(minY / 540) * 100}%`,
-              width: `${((maxX - minX) / 960) * 100}%`,
-              height: `${((maxY - minY) / 540) * 100}%`,
+              left: `${minX}px`,
+              top: `${minY}px`,
+              width: `${maxX - minX}px`,
+              height: `${maxY - minY}px`,
               border: '1.5px dashed #7B6DAF',
               borderRadius: '6px',
               pointerEvents: 'none',
@@ -1229,12 +947,12 @@ export default function StageCanvas({
             className="selection-box"
             style={{
               position: 'absolute',
-              left: `${(renderX / 960) * 100}%`,
-              top: `${(renderY / 540) * 100}%`,
-              width: `${(selectedObj.w / 960) * 100}%`,
-              height: `${(selectedObj.h / 540) * 100}%`,
+              left: `${renderX}px`,
+              top: `${renderY}px`,
+              width: `${selectedObj.w}px`,
+              height: `${selectedObj.h}px`,
               transform: `rotate(${renderRot}deg) scale(${renderSx}, ${renderSy}) skew(${renderSkewX}deg, ${selectedObj.skewY}deg)`,
-              transformOrigin: `${(pivot.x / selectedObj.w) * 100}% ${(pivot.y / selectedObj.h) * 100}%`,
+              transformOrigin: `${pivot.x}px ${pivot.y}px`,
               border: '1.5px dashed var(--coral)',
               zIndex: 20,
               pointerEvents: 'none',
@@ -1357,12 +1075,12 @@ export default function StageCanvas({
         <div
           style={{
             position: 'absolute',
-            left: `${(translationInfo.worldToX / 960) * 100}%`,
-            top: `${(translationInfo.worldToY / 540) * 100}%`,
-            width: `${(targetObj.w / 960) * 100}%`,
-            height: `${(targetObj.h / 540) * 100}%`,
+            left: `${translationInfo.worldToX}px`,
+            top: `${translationInfo.worldToY}px`,
+            width: `${targetObj.w}px`,
+            height: `${targetObj.h}px`,
             transform: `rotate(${translationInfo.endState?.rotation ?? targetObj.rotation}deg) scale(${translationInfo.endState?.scaleX ?? targetObj.scaleX}, ${translationInfo.endState?.scaleY ?? targetObj.scaleY}) skew(${translationInfo.endState?.skewX ?? targetObj.skewX}deg, 0deg)`,
-            transformOrigin: `${(getObjectPivot(targetObj).x / targetObj.w) * 100}% ${(getObjectPivot(targetObj).y / targetObj.h) * 100}%`,
+            transformOrigin: `${getObjectPivot(targetObj).x}px ${getObjectPivot(targetObj).y}px`,
             opacity: 0.72,
             border: '2px dashed var(--coral)',
             borderRadius: '8px',
@@ -1412,11 +1130,14 @@ export default function StageCanvas({
       {/* SVG Kinematic Rigging & Motion Path Overlay */}
       <svg
         viewBox="0 0 960 540"
+        width={CANVAS_WIDTH}
+        height={CANVAS_HEIGHT}
         style={{
           position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
+          top: 0,
+          left: 0,
+          width: `${CANVAS_WIDTH}px`,
+          height: `${CANVAS_HEIGHT}px`,
           pointerEvents: 'none',
           zIndex: 22,
         }}
@@ -1531,10 +1252,10 @@ export default function StageCanvas({
         <div
           style={{
             position: 'absolute',
-            left: `${(Math.min(marqueeBox.startX, marqueeBox.currentX) / 960) * 100}%`,
-            top: `${(Math.min(marqueeBox.startY, marqueeBox.currentY) / 540) * 100}%`,
-            width: `${(Math.abs(marqueeBox.currentX - marqueeBox.startX) / 960) * 100}%`,
-            height: `${(Math.abs(marqueeBox.currentY - marqueeBox.startY) / 540) * 100}%`,
+            left: `${Math.min(marqueeBox.startX, marqueeBox.currentX)}px`,
+            top: `${Math.min(marqueeBox.startY, marqueeBox.currentY)}px`,
+            width: `${Math.abs(marqueeBox.currentX - marqueeBox.startX)}px`,
+            height: `${Math.abs(marqueeBox.currentY - marqueeBox.startY)}px`,
             background: 'rgba(123, 109, 175, 0.14)',
             border: '1.5px dashed #7B6DAF',
             borderRadius: '4px',

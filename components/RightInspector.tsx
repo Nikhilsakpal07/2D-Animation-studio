@@ -43,6 +43,8 @@ interface RightInspectorProps {
   // Canvas picking
   isPickingTarget?: boolean
   onTogglePickTarget?: (active: boolean) => void
+
+  totalFrames?: number
 }
 
 const PRESET_COLORS = [
@@ -75,6 +77,7 @@ export default function RightInspector({
   onDeleteBlock,
   isPickingTarget = false,
   onTogglePickTarget,
+  totalFrames = 168,
 }: RightInspectorProps) {
   const [matrixExpanded, setMatrixExpanded] = useState(true)
   const [actionsExpanded, setActionsExpanded] = useState(true)
@@ -589,10 +592,10 @@ export default function RightInspector({
                         <input
                           type="number"
                           min={activeBlock.startFrame + 1}
-                          max="168"
+                          max={String(totalFrames)}
                           value={activeBlock.endFrame}
                           onChange={e => {
-                            const val = Math.max(activeBlock.startFrame + 1, Math.min(168, Number(e.target.value)))
+                            const val = Math.max(activeBlock.startFrame + 1, Math.min(totalFrames, Number(e.target.value)))
                             onUpdateBlock(activeBlock.id, { endFrame: val })
                           }}
                           style={{ width: '100%', textAlign: 'right', border: 0, background: 'transparent', font: '11px monospace', fontWeight: 700 }}
@@ -627,8 +630,8 @@ export default function RightInspector({
                       <button
                         onClick={() => {
                           const dur = Math.max(1, activeBlock.endFrame - activeBlock.startFrame)
-                          const newStart = Math.min(148, activeBlock.startFrame + 20)
-                          const newEnd = Math.min(168, newStart + dur)
+                          const newStart = Math.min(Math.max(0, totalFrames - dur), activeBlock.startFrame + 20)
+                          const newEnd = Math.min(totalFrames, newStart + dur)
                           onUpdateBlock(activeBlock.id, { startFrame: newStart, endFrame: newEnd })
                         }}
                         style={{

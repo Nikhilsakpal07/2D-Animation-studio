@@ -35,29 +35,44 @@ export interface UserProfileData {
   totalBlocks: number
 }
 
+// Timeout helper to prevent remote Firestore network hangs from blocking UI
+function withTimeout<T>(promise: Promise<T>, ms = 1200): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('Firestore timeout')), ms)),
+  ])
+}
+
 // ----------------------------------------------------------------------
 // 1. User Projects CRUD
 // ----------------------------------------------------------------------
 
 export async function getUserProjects(uid: string): Promise<UserProjectItem[]> {
   const localKey = `cg_user_projects_${uid}`
-  const localData = localStorage.getItem(localKey)
-  let items: UserProjectItem[] = localData ? JSON.parse(localData) : []
+  let items: UserProjectItem[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) items = JSON.parse(localData)
+    } catch (e) {}
+  }
 
   try {
     const colRef = collection(db, 'users', uid, 'projects')
-    const snap = await getDocs(colRef)
+    const snap = await withTimeout(getDocs(colRef), 1200)
     if (!snap.empty) {
       const remoteItems: UserProjectItem[] = []
       snap.forEach(d => {
         remoteItems.push(d.data() as UserProjectItem)
       })
       remoteItems.sort((a, b) => b.updatedAt - a.updatedAt)
-      localStorage.setItem(localKey, JSON.stringify(remoteItems))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(localKey, JSON.stringify(remoteItems))
+      }
       return remoteItems
     }
   } catch (err) {
-    console.warn('Firestore offline/fallback for getUserProjects:', err)
+    // Offline or timed out - local storage is our resilient fallback
   }
 
   return items.sort((a, b) => b.updatedAt - a.updatedAt)
@@ -69,7 +84,13 @@ export async function saveUserProject(
   projectId?: string
 ): Promise<UserProjectItem> {
   const localKey = `cg_user_projects_${uid}`
-  const existing = await getUserProjects(uid)
+  let existing: UserProjectItem[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) existing = JSON.parse(localData)
+    } catch (e) {}
+  }
 
   const id = projectId || `proj_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`
   const objectCount = project.sceneObjects?.length || 0
@@ -91,46 +112,62 @@ export async function saveUserProject(
   }
 
   const updatedList = [projectItem, ...existing.filter(p => p.id !== id)]
-  localStorage.setItem(localKey, JSON.stringify(updatedList))
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(localKey, JSON.stringify(updatedList))
+    } catch (e) {}
+  }
 
+  // Dual-sync to Firestore with timeout so UI never hangs (sanitize undefined fields)
   try {
     const docRef = doc(db, 'users', uid, 'projects', id)
-    await setDoc(docRef, projectItem)
+    const cleanItem = JSON.parse(JSON.stringify(projectItem))
+    await withTimeout(setDoc(docRef, cleanItem), 1200)
   } catch (err) {
     console.warn('Firestore offline/fallback for saveUserProject:', err)
   }
 
-  // Also log activity
-  await logUserActivity(uid, {
+  // Also log activity without blocking
+  logUserActivity(uid, {
     icon: '💾',
     title: `Saved project "${projectItem.name}"`,
     details: `${objectCount} objects · ${blockCount} transform blocks · Theme: ${projectItem.theme}`,
     badge: 'Project Saved',
-  })
+  }).catch(() => {})
 
   return projectItem
 }
 
 export async function deleteUserProject(uid: string, projectId: string): Promise<void> {
   const localKey = `cg_user_projects_${uid}`
-  const existing = await getUserProjects(uid)
+  let existing: UserProjectItem[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) existing = JSON.parse(localData)
+    } catch (e) {}
+  }
   const target = existing.find(p => p.id === projectId)
   const next = existing.filter(p => p.id !== projectId)
-  localStorage.setItem(localKey, JSON.stringify(next))
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(localKey, JSON.stringify(next))
+    } catch (e) {}
+  }
 
   try {
     const docRef = doc(db, 'users', uid, 'projects', projectId)
-    await deleteDoc(docRef)
+    await withTimeout(deleteDoc(docRef), 1200)
   } catch (err) {
     console.warn('Firestore offline/fallback for deleteUserProject:', err)
   }
 
   if (target) {
-    await logUserActivity(uid, {
+    logUserActivity(uid, {
       icon: '🗑️',
       title: `Deleted project "${target.name}"`,
       badge: 'Project Deleted',
-    })
+    }).catch(() => {})
   }
 }
 
@@ -154,18 +191,25 @@ export async function duplicateUserProject(uid: string, projectId: string): Prom
 
 export async function getUserCustomAssets(uid: string): Promise<AssetDef[]> {
   const localKey = `cg_user_assets_${uid}`
-  const localData = localStorage.getItem(localKey)
-  let items: AssetDef[] = localData ? JSON.parse(localData) : []
+  let items: AssetDef[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) items = JSON.parse(localData)
+    } catch (e) {}
+  }
 
   try {
     const docRef = doc(db, 'users', uid, 'assets', 'library')
-    const snap = await getDoc(docRef)
+    const snap = await withTimeout(getDoc(docRef), 1200)
     if (snap.exists() && Array.isArray(snap.data()?.items)) {
       items = snap.data()?.items
-      localStorage.setItem(localKey, JSON.stringify(items))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(localKey, JSON.stringify(items))
+      }
     }
   } catch (err) {
-    console.warn('Firestore offline/fallback for getUserCustomAssets:', err)
+    // Fallback to local
   }
 
   return items
@@ -173,23 +217,34 @@ export async function getUserCustomAssets(uid: string): Promise<AssetDef[]> {
 
 export async function saveUserCustomAsset(uid: string, asset: AssetDef): Promise<void> {
   const localKey = `cg_user_assets_${uid}`
-  const existing = await getUserCustomAssets(uid)
+  let existing: AssetDef[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) existing = JSON.parse(localData)
+    } catch (e) {}
+  }
   const next = [...existing.filter(a => a.name !== asset.name), asset]
-  localStorage.setItem(localKey, JSON.stringify(next))
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(localKey, JSON.stringify(next))
+    } catch (e) {}
+  }
 
   try {
     const docRef = doc(db, 'users', uid, 'assets', 'library')
-    await setDoc(docRef, { items: next }, { merge: true })
+    const cleanItems = JSON.parse(JSON.stringify(next))
+    await withTimeout(setDoc(docRef, { items: cleanItems }, { merge: true }), 1200)
   } catch (err) {
     console.warn('Firestore offline/fallback for saveUserCustomAsset:', err)
   }
 
-  await logUserActivity(uid, {
+  logUserActivity(uid, {
     icon: '🎨',
     title: `Built custom CG asset "${asset.name}"`,
     details: `${asset.primitives?.length || 1} primitives rasterized via Computer Graphics algorithms`,
     badge: 'Custom Asset',
-  })
+  }).catch(() => {})
 }
 
 // ----------------------------------------------------------------------
@@ -198,18 +253,25 @@ export async function saveUserCustomAsset(uid: string, asset: AssetDef): Promise
 
 export async function getUserActivity(uid: string): Promise<UserActivityItem[]> {
   const localKey = `cg_user_activity_${uid}`
-  const localData = localStorage.getItem(localKey)
-  let items: UserActivityItem[] = localData ? JSON.parse(localData) : []
+  let items: UserActivityItem[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) items = JSON.parse(localData)
+    } catch (e) {}
+  }
 
   try {
     const docRef = doc(db, 'users', uid, 'activity', 'log')
-    const snap = await getDoc(docRef)
+    const snap = await withTimeout(getDoc(docRef), 1200)
     if (snap.exists() && Array.isArray(snap.data()?.items)) {
       items = snap.data()?.items
-      localStorage.setItem(localKey, JSON.stringify(items))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(localKey, JSON.stringify(items))
+      }
     }
   } catch (err) {
-    console.warn('Firestore offline/fallback for getUserActivity:', err)
+    // Local fallback
   }
 
   return items.sort((a, b) => b.timestamp - a.timestamp)
@@ -220,7 +282,13 @@ export async function logUserActivity(
   entry: { icon: string; title: string; details?: string; badge?: string }
 ): Promise<void> {
   const localKey = `cg_user_activity_${uid}`
-  const existing = await getUserActivity(uid)
+  let existing: UserActivityItem[] = []
+  if (typeof window !== 'undefined') {
+    try {
+      const localData = localStorage.getItem(localKey)
+      if (localData) existing = JSON.parse(localData)
+    } catch (e) {}
+  }
 
   const newItem: UserActivityItem = {
     id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -233,13 +301,18 @@ export async function logUserActivity(
 
   // Keep most recent 60 items
   const next = [newItem, ...existing].slice(0, 60)
-  localStorage.setItem(localKey, JSON.stringify(next))
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(localKey, JSON.stringify(next))
+    } catch (e) {}
+  }
 
   try {
     const docRef = doc(db, 'users', uid, 'activity', 'log')
-    await setDoc(docRef, { items: next }, { merge: true })
+    const cleanItems = JSON.parse(JSON.stringify(next))
+    await withTimeout(setDoc(docRef, { items: cleanItems }, { merge: true }), 1200)
   } catch (err) {
-    console.warn('Firestore offline/fallback for logUserActivity:', err)
+    // Offline or timed out
   }
 }
 
@@ -262,13 +335,15 @@ export async function getUserProfile(uid: string): Promise<UserProfileData> {
 
   try {
     const docRef = doc(db, 'users', uid)
-    const snap = await getDoc(docRef)
+    const snap = await withTimeout(getDoc(docRef), 1200)
     if (snap.exists()) {
       profile = { ...profile, ...snap.data() }
-      localStorage.setItem(localKey, JSON.stringify(profile))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(localKey, JSON.stringify(profile))
+      }
     }
   } catch (err) {
-    console.warn('Firestore offline/fallback for getUserProfile:', err)
+    // Offline / fallback to local profile
   }
 
   return profile
@@ -278,11 +353,13 @@ export async function updateUserProfile(uid: string, updates: Partial<UserProfil
   const localKey = `cg_user_profile_${uid}`
   const current = await getUserProfile(uid)
   const updated = { ...current, ...updates }
-  localStorage.setItem(localKey, JSON.stringify(updated))
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(localKey, JSON.stringify(updated))
+  }
 
   try {
     const docRef = doc(db, 'users', uid)
-    await setDoc(docRef, updated, { merge: true })
+    await withTimeout(setDoc(docRef, updated, { merge: true }), 1200)
   } catch (err) {
     console.warn('Firestore offline/fallback for updateUserProfile:', err)
   }

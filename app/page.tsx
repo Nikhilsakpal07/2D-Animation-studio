@@ -531,6 +531,8 @@ function Studio({
   const [isPickingTarget, setIsPickingTarget] = useState(false)
   // Project Info & Auto-Save
   const [projectName, setProjectName] = useState('My 2D Animation')
+  const [durationSeconds, setDurationSeconds] = useState(7)
+  const totalFrames = Math.max(24, Math.round(durationSeconds * 24))
   const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'idle'>('saved')
   const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const isLoadedFromStorageRef = useRef(false)
@@ -575,6 +577,7 @@ function Studio({
     const saved = loadFromLocalStorage()
     if (saved) {
       if (saved.projectName) setProjectName(saved.projectName)
+      if (saved.durationSeconds) setDurationSeconds(saved.durationSeconds)
       if (saved.theme) setTheme(saved.theme)
       if (saved.customBgConfig) setCustomBgConfig(saved.customBgConfig)
       if (saved.sceneObjects) setSceneObjects(saved.sceneObjects)
@@ -594,6 +597,7 @@ function Studio({
   useEffect(() => {
     if (initialProjectData) {
       if (initialProjectData.projectName) setProjectName(initialProjectData.projectName)
+      if (initialProjectData.durationSeconds) setDurationSeconds(initialProjectData.durationSeconds)
       if (initialProjectData.theme) setTheme(initialProjectData.theme)
       if (initialProjectData.customBgConfig) setCustomBgConfig(initialProjectData.customBgConfig)
       if (initialProjectData.sceneObjects) setSceneObjects(initialProjectData.sceneObjects)
@@ -615,10 +619,7 @@ function Studio({
 
   // Save Project to Profile (Cloud Firestore + LocalStorage)
   async function handleSaveToMyProfile() {
-    if (!user) {
-      setAuthModalOpen(true)
-      return
-    }
+    const targetUid = user?.uid || 'guest_creator'
     setSaveStatus('saving')
     try {
       const payload = createProjectPayload({
@@ -630,12 +631,14 @@ function Studio({
         customAssets,
         audioTrack,
         soundCues,
+        durationSeconds,
       })
-      await saveUserProject(user.uid, payload)
-      await logUserActivity(user.uid, {
+      saveToLocalStorage(payload)
+      await saveUserProject(targetUid, payload)
+      await logUserActivity(targetUid, {
         icon: '💾',
         title: `Saved project '${projectName}' to Profile`,
-        details: `${sceneObjects.length} objects · ${theme} backdrop · ${Object.keys(blocksMap).length} animated tracks`,
+        details: `${sceneObjects.length} objects · ${theme} backdrop · ${durationSeconds}s duration`,
         badge: 'Saved',
       })
       setSaveStatus('saved')
@@ -648,8 +651,8 @@ function Studio({
         })
       } catch (e) {}
     } catch (err) {
-      console.error('Failed to save project to profile:', err)
-      setSaveStatus('idle')
+      console.warn('Save to profile note:', err)
+      setSaveStatus('saved')
     }
   }
 
@@ -668,6 +671,7 @@ function Studio({
         customAssets,
         audioTrack,
         soundCues,
+        durationSeconds,
       })
       saveToLocalStorage(payload)
       if (user?.uid) {
@@ -677,7 +681,7 @@ function Studio({
     }, 550)
 
     return () => clearTimeout(timer)
-  }, [projectName, theme, customBgConfig, sceneObjects, blocksMap, customAssets, audioTrack, soundCues, user?.uid])
+  }, [projectName, theme, customBgConfig, sceneObjects, blocksMap, customAssets, audioTrack, soundCues, durationSeconds, user?.uid])
 
   // 3. Dismiss project menu on outside click
   useEffect(() => {
@@ -731,11 +735,11 @@ function Studio({
 
     const interval = window.setInterval(() => {
       setFrame(cur => {
-        const next = cur >= 168 ? 0 : cur + 1
+        const next = cur >= totalFrames ? 0 : cur + 1
         // Fire any sound effect cues placed at this frame!
         timelineAudio.onFrameTick(next, soundCues)
         // If loop wrapped around, re-sync audio from frame 0
-        if (cur >= 168) {
+        if (cur >= totalFrames) {
           timelineAudio.play(0, 24)
         }
         return next
@@ -746,7 +750,7 @@ function Studio({
       window.clearInterval(interval)
       timelineAudio.stop()
     }
-  }, [playing, soundCues])
+  }, [playing, soundCues, totalFrames])
 
   // Sync volume and mute changes with audio engine
   useEffect(() => {
@@ -944,6 +948,7 @@ function Studio({
       customAssets,
       audioTrack,
       soundCues,
+      durationSeconds,
     })
     downloadProjectFile(payload)
     setSaveStatus('saved')
@@ -959,6 +964,9 @@ function Studio({
       const parsed = parseProjectFile(text)
       if (parsed) {
         setProjectName(parsed.projectName)
+        if (parsed.durationSeconds) {
+          setDurationSeconds(parsed.durationSeconds)
+        }
         setTheme(parsed.theme)
         setCustomBgConfig(parsed.customBgConfig)
         setSceneObjects(parsed.sceneObjects)
@@ -992,6 +1000,7 @@ function Studio({
     if (window.confirm('Reset project to blank default canvas? All unsaved objects and timeline tracks will be cleared.')) {
       clearLocalStorage()
       setProjectName('Untitled Animation')
+      setDurationSeconds(7)
       setTheme('countryside')
       setCustomBgConfig(defaultCustomBackground)
       setSceneObjects([])
@@ -2569,6 +2578,7 @@ function Studio({
           onDeleteBlock={handleDeleteBlock}
           isPickingTarget={isPickingTarget}
           onTogglePickTarget={setIsPickingTarget}
+          totalFrames={totalFrames}
         />
       </div>
 
@@ -2615,6 +2625,9 @@ function Studio({
         onDeleteSoundCue={id => {
           setSoundCues(prev => prev.filter(c => c.id !== id))
         }}
+        durationSeconds={durationSeconds}
+        setDurationSeconds={setDurationSeconds}
+        totalFrames={totalFrames}
       />
 
       {/* Audio Track & Sound FX Manager Modal */}
@@ -2655,6 +2668,9 @@ function Studio({
         blocksMap={blocksMap}
         theme={theme}
         customConfig={customBgConfig}
+        hiddenMap={hiddenMap}
+        totalFrames={totalFrames}
+        durationSeconds={durationSeconds}
       />
 
       <PreviewModal
@@ -2664,6 +2680,9 @@ function Studio({
         blocksMap={blocksMap}
         theme={theme}
         customConfig={customBgConfig}
+        hiddenMap={hiddenMap}
+        totalFrames={totalFrames}
+        durationSeconds={durationSeconds}
       />
 
       <TemplatesModal

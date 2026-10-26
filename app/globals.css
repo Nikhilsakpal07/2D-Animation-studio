@@ -31,11 +31,32 @@ button,input { font:inherit; } button { cursor:pointer; border:0; color:inherit;
 .workspace{height:100%;display:flex;flex-direction:column;min-width:0;overflow:hidden}
 .stage-zone{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:16px;overflow:hidden}
 .sidebar-tip{position:static!important;margin-top:16px!important;margin-bottom:8px!important;width:100%!important;box-sizing:border-box!important;flex-shrink:0}
-.timeline{height:210px!important;flex-shrink:0;background:#f3efe7;border-top:1px solid var(--stone);display:flex;flex-direction:column;position:relative;z-index:10;overflow:hidden}
-.timeline-head{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--stone);background:#f3efe7;flex-shrink:0}
+.timeline{height:210px!important;flex-shrink:0;background:#f3efe7;border-top:1px solid var(--stone);display:flex;flex-direction:column;position:relative;z-index:100;overflow:visible!important}
+.timeline-head{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--stone);background:#f3efe7;flex-shrink:0;position:relative;z-index:100;overflow:visible!important}
 .timeline-body{display:grid;grid-template-columns:235px 1fr;flex:1;min-height:0;overflow:hidden}
 .artboard:before{display:none!important}
 .left-sidebar{overflow-y:auto!important;overflow-x:hidden!important}
 .left-sidebar *{max-width:100%;box-sizing:border-box}
 .asset-card{cursor:grab;user-select:none}
 .asset-card:active{cursor:grabbing}
+
+/* Lock HTML5 Canvas & Artboard to exact 960 × 540 resolution */
+.artboard {
+  width: 960px !important;
+  height: 540px !important;
+  aspect-ratio: 16/9 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 8px #fffaf4, 0 14px 30px rgba(123, 107, 89, 0.18) !important;
+  box-sizing: border-box !important;
+  position: absolute !important;
+  overflow: hidden !important;
+}
+
+.stage-canvas-buffer {
+  width: 960px !important;
+  height: 540px !important;
+  aspect-ratio: 16/9 !important;
+  display: block !important;
+}
+

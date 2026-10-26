@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Animation Studio — Project Documentation & Viva Report (4 Members)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAF6F0;
+      --card-bg: #FFFFFF;
+      --ink: #2B2824;
+      --muted: #6B645C;
+      --border: #E8E2D8;
+      --coral: #D95D4E;
+      --coral-light: #FBECE9;
+      --lavender: #7B6DAF;
+      --lavender-light: #F2F0F9;
+      --teal: #3B827E;
+      --teal-light: #E9F4F4;
+      --yellow: #F5B941;
+      --yellow-light: #FEF8E9;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.65;
+      font-size: 14.5px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* Print Floating Toolbar */
+    .action-bar {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-action {
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: all 0.2s ease;
+    }
+
+    .btn-docx {
+      background: #1B365D;
+    }
+    .btn-docx:hover {
+      background: #0F2340;
+      transform: translateY(-1px);
+    }
+
+    .btn-print {
+      background: var(--coral);
+    }
+    .btn-print:hover {
+      background: #C44C3E;
+      transform: translateY(-1px);
+    }
+
+    /* Cover Page */
+    .cover-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 50px 44px;
+      margin-bottom: 36px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    }
+
+    .badge-univ {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--lavender-light);
+      color: var(--lavender);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    h1.project-title {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    p.subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 28px;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      margin-top: 24px;
+      text-align: left;
+    }
+
+    .meta-item h4 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .meta-item p {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    /* Content Cards */
+    .section-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 36px;
+      margin-bottom: 26px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    }
+
+    h2.section-heading {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--bg);
+      padding-bottom: 10px;
+    }
+
+    h3.subheading {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 22px 0 10px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: #3C3833;
+    }
+
+    /* Math Formula Block */
+    .math-block {
+      background: #FDFBF7;
+      border-left: 4px solid var(--coral);
+      padding: 14px 18px;
+      margin: 14px 0;
+      border-radius: 0 8px 8px 0;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      color: #2B2824;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    .matrix-display {
+      font-family: 'Fira Code', monospace;
+      background: #F4F1EA;
+      padding: 12px;
+      border-radius: 8px;
+      display: inline-block;
+      margin: 10px 0;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 13px;
+    }
+
+    th {
+      background: #F6F2EB;
+      color: var(--ink);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    tr:hover td {
+      background: #FCFAF6;
+    }
+
+    /* Role Pill Badges */
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .pill-p1 { background: var(--coral-light); color: var(--coral); }
+    .pill-p2 { background: var(--lavender-light); color: var(--lavender); }
+    .pill-p3 { background: var(--teal-light); color: var(--teal); }
+    .pill-p4 { background: var(--yellow-light); color: #B37D14; }
+
+    /* Q&A Accordion Style */
+    .qa-box {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 14px;
+      background: #FAFAFA;
+    }
+    .qa-q {
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+      font-size: 13.5px;
+    }
+    .qa-a {
+      font-size: 13px;
+      color: #4A453F;
+      margin: 0;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #FFFFFF;
+        color: #000000;
+        font-size: 10.5pt;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+      .cover-card, .section-card {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin-bottom: 24pt;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      h2.section-heading {
+        border-bottom: 1.5pt solid #000;
+      }
+      .math-block {
+        background: #F9F9F9;
+        border-left: 3pt solid #333;
+      }
+      th {
+        background: #EEE !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print & Download Toolbar -->
+  <div class="action-bar">
+    <a class="btn-action btn-docx" href="/PROJECT_VIVA_DOCUMENTATION_4_MEMBERS.docx" download>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Download .DOCX
+    </a>
+    <button class="btn-action btn-print" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      Print / PDF
+    </button>
+  </div>
+
+  <div class="container">
+
+    <!-- COVER PAGE -->
+    <div class="cover-card">
+      <span class="badge-univ">Computer Graphics &amp; Visualization Academic Capstone</span>
+      <h1 class="project-title">2D Animation Studio &amp; Graphics Laboratory</h1>
+      <p class="subtitle">An Expressive Web Application for Vector Rigging, 3×3 Homogeneous Matrices, 24 FPS Keyframing, and Procedural Web Audio</p>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <h4>Course / Subject</h4>
+          <p>Computer Graphics (CS)</p>
+        </div>
+        <div class="meta-item">
+          <h4>Tech Stack</h4>
+          <p>Next.js 16 • Turbopack • TS</p>
+        </div>
+        <div class="meta-item">
+          <h4>Team Structure</h4>
+          <p>4 Members (Feature-Based)</p>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; padding-top: 18px; border-top: 1px dashed var(--border); display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; text-align: left;">
+        <div>
+          <span class="pill pill-p1">Member 1</span>
+          <p style="margin-top: 4px; font-weight: 600; font-size: 12px;">Creation &amp; Lab</p>
+          <p style="font-size: 11px; color: var(--muted);">Graphics Lab, Backgrounds, Templates</p>
+        </div>
+        <div>
+          <span class="pill pill-p2">Member 2</span>
+          <p style="margin-top: 4px; font-weight: 600; font-size: 12px;">Canvas &amp; Viewport</p>
+          <p style="font-size: 11px; color: var(--muted);">Infinite Canvas, Marquee &amp; Grouping</p>
+        </div>
+        <div>
+          <span class="pill pill-p3">Member 3</span>
+          <p style="margin-top: 4px; font-weight: 600; font-size: 12px;">Matrices &amp; Rigging</p>
+          <p style="font-size: 11px; color: var(--muted);">3×3 Matrices, Inspector &amp; Pivots</p>
+        </div>
+        <div>
+          <span class="pill pill-p4">Member 4</span>
+          <p style="margin-top: 4px; font-weight: 600; font-size: 12px;">Timeline &amp; Audio</p>
+          <p style="font-size: 11px; color: var(--muted);">24 FPS Timeline, Audio &amp; GIF</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. ABSTRACT & INTRODUCTION -->
+    <div class="section-card">
+      <h2 class="section-heading">1. Executive Summary &amp; System Overview</h2>
+      <p>The <strong>2D Animation Studio &amp; Computer Graphics Laboratory</strong> is a production-grade web application built in Next.js 16, TypeScript, and the HTML5 Canvas API. Designed to unite academic computer graphics theory with an intuitive animation tool, the platform is divided into four distinct, full-featured subsystems:</p>
+      <ul style="margin-left: 20px; margin-bottom: 14px; line-height: 1.8;">
+        <li><strong>Visual Creation Studio &amp; Graphics Lab:</strong> Interactive pixel-grid drawing visualizer, custom animated scenic backdrop generator, and pre-rigged character template library.</li>
+        <li><strong>Stage Canvas Architecture &amp; Grouping:</strong> Infinite pan/zoom canvas, affine viewport transformation engine, rubber-band marquee selection, and hierarchical object grouping.</li>
+        <li><strong>3×3 Homogeneous Matrices &amp; Skeletal Rigging:</strong> Real-time 3×3 matrix inspector, custom joint pivot points, and hierarchical Forward Kinematics.</li>
+        <li><strong>24 FPS Animation Timeline, Audio &amp; Export Pipeline:</strong> Multi-track 24 FPS keyframe sequencer with parametric easing, 100% offline procedural Web Audio synthesizer, client-side GIF89a LZW encoder, and Firebase Cloud Firestore dual-sync.</li>
+      </ul>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- 2. FEATURE DISTRIBUTION MATRIX -->
+    <div class="section-card">
+      <h2 class="section-heading">2. Feature-First 4-Member Responsibility Matrix</h2>
+      <p>Every team member owns complete, clickable website features alongside the theoretical Computer Graphics foundations backing them:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Website Feature Subsystem</th>
+            <th>Live Features Demonstrated on Screen</th>
+            <th>Primary Code Modules</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Member 1</strong><br><span class="pill pill-p1">Creation &amp; Lab</span></td>
+            <td><strong>Visual Creation Studio, Graphics Lab &amp; Backgrounds</strong></td>
+            <td>
+              • <strong>Interactive Graphics Lab Modal (<code>CG Algorithms</code>)</strong>: Pixel grid visualizer showing discrete raster coordinates and decision variable transitions.<br>
+              • <strong>Scenic Backgrounds Studio (<code>Background</code>)</strong>: Curated day/night/space animated presets and custom CSS gradients.<br>
+              • <strong>Template &amp; Asset Library (<code>Templates</code>)</strong>: One-click character walk cycles, bouncing ball physics scenes.<br>
+              • <em>CG Math:</em> DDA, Bresenham Line ($err = \Delta x - \Delta y$), Midpoint Circle (8-way symmetry), Midpoint Ellipse (2 Regions), Bézier Curves.
+            </td>
+            <td>
+              <code>components/GraphicsLabModal.tsx</code><br>
+              <code>components/CustomBackgroundModal.tsx</code><br>
+              <code>components/TemplatesModal.tsx</code><br>
+              <code>lib/cg-engine.ts</code>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Member 2</strong><br><span class="pill pill-p2">Canvas &amp; Viewport</span></td>
+            <td><strong>Stage Canvas Architecture, Multi-Select &amp; Grouping</strong></td>
+            <td>
+              • <strong>Infinite Stage Canvas</strong>: Smooth stage panning (<code>Spacebar + Drag</code>), zooming 25%–400%, and Center Reset (<code>Ctrl + 0</code>).<br>
+              • <strong>Marquee Selection &amp; Multi-Select</strong>: Rubber-band drag box, Shift-click selection.<br>
+              • <strong>Hierarchical Object Grouping</strong>: Group (<code>Ctrl + G</code>), Ungroup (<code>Ctrl + Shift + G</code>), and dynamic Axis-Aligned Bounding Box (AABB) computation.<br>
+              • <em>CG Math:</em> Affine Viewport Transforms, Screen-to-World mapping, Inverse View Matrix.
+            </td>
+            <td>
+              <code>components/StageCanvas.tsx</code><br>
+              <code>lib/cg-canvas-renderer.ts</code>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Member 3</strong><br><span class="pill pill-p3">Matrices &amp; Rigging</span></td>
+            <td><strong>3×3 Homogeneous Matrices &amp; Skeletal Rigging</strong></td>
+            <td>
+              • <strong>Live 3×3 Matrix Inspector (<code>Right Panel</code>)</strong>: Live sliders for Translation, Rotation, Scale, and Shear updating the live $3\times3$ numeric matrix.<br>
+              • <strong>Joint Pivot Point Picker</strong>: Rotate limbs around elbows/knees/base rather than center.<br>
+              • <strong>Skeletal Rigging (Forward Kinematics)</strong>: Parent-child hierarchy where moving parent body moves attached limbs automatically ($M_{\text{world}} = M_{\text{parent}} \times M_{\text{local}}$).
+            </td>
+            <td>
+              <code>components/RightInspector.tsx</code><br>
+              <code>lib/cg-engine.ts</code>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Member 4</strong><br><span class="pill pill-p4">Timeline &amp; Audio</span></td>
+            <td><strong>24 FPS Animation Timeline, Audio &amp; Export Pipeline</strong></td>
+            <td>
+              • <strong>24 FPS Timeline Sequencer (<code>Bottom Panel</code>)</strong>: Multi-track keyframing, scrubber, loop playback, and parametric Easing Curves (Linear, Cubic, Elastic).<br>
+              • <strong>Procedural Web Audio Engine (<code>Audio</code>)</strong>: 100% offline synthesizer presets (Chiptune 8-bit, Lo-Fi, Synthwave), frame-accurate Sound Cues, and live audio waveform visualizer.<br>
+              • <strong>Client-Side GIF89a &amp; Video Exporter (<code>Export</code>)</strong>: In-browser GIF generation via 3-3-2 RGB color quantization and LZW bitstream compression; MP4/WebM video exports.<br>
+              • <strong>User Profile &amp; Cloud Store</strong>: Firebase Auth, Creator Stats, `.cgproj` project serialization, and Cloud Firestore + LocalStorage dual-sync.
+            </td>
+            <td>
+              <code>components/TimelinePanel.tsx</code><br>
+              <code>components/AudioModal.tsx</code><br>
+              <code>components/ExportModal.tsx</code><br>
+              <code>components/ProfileDashboard.tsx</code><br>
+              <code>lib/audio-engine.ts</code><br>
+              <code>lib/gif-encoder.ts</code><br>
+              <code>lib/cg-project.ts</code>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. MATHEMATICAL DERIVATIONS -->
+    <div class="section-card">
+      <h2 class="section-heading">3. Key Mathematical Formulations &amp; Derivations</h2>
+
+      <h3 class="subheading">3.1 Bresenham's Integer Line Drawing Algorithm</h3>
+      <p>Eliminates floating-point division and rounding calls by deriving an integer decision parameter $err = \Delta x - \Delta y$:</p>
+      <div class="math-block">
+        p_0 = 2Δy - Δx<br>
+        If p_k < 0 :  Plot(x_k + 1, y_k),      p_{k+1} = p_k + 2Δy<br>
+        If p_k ≥ 0 :  Plot(x_k + 1, y_k + 1),  p_{k+1} = p_k + 2Δy - 2Δx
+      </div>
+
+      <h3 class="subheading">3.2 Midpoint Circle Algorithm &amp; 8-Way Symmetry</h3>
+      <p>Evaluates midpoint $M(x_k + 1, y_k - 0.5)$ against implicit circle $f(x, y) = x^2 + y^2 - r^2$, yielding:</p>
+      <div class="math-block">
+        p_0 = 5/4 - r ≈ 1 - r (for integer arithmetic)<br>
+        If p_k < 0 :  p_{k+1} = p_k + 2x_{k+1} + 1<br>
+        If p_k ≥ 0 :  p_{k+1} = p_k + 2x_{k+1} + 1 - 2y_{k+1}
+      </div>
+      <p>Plotting $(x, y)$ instantly generates 8 symmetric points: $(\pm x, \pm y)$ and $(\pm y, \pm x)$, cutting computations by 87.5%.</p>
+
+      <h3 class="subheading">3.3 3×3 Homogeneous Transformation Matrices</h3>
+      <p>Translation is an affine operation ($x' = x + t_x$) that cannot be represented in a 2×2 matrix. In 3D projective homogeneous coordinates $[x, y, 1]^T$:</p>
+      <div class="matrix-display">
+        Composite M = T(tx, ty) × R(θ) × Sh(shx, shy) × S(sx, sy)<br>
+        [ x' ]   [ cosθ·sx - sinθ·shy   -sinθ·sy + cosθ·shx   tx ] [ x ]<br>
+        [ y' ] = [ sinθ·sx + cosθ·shy    cosθ·sy + sinθ·shx   ty ] [ y ]<br>
+        [ 1  ]   [         0                      0            1 ] [ 1 ]
+      </div>
+
+      <h3 class="subheading">3.4 Rotation Around an Arbitrary Pivot Point</h3>
+      <p>To rotate an object around joint $(x_p, y_p)$ rather than origin $(0, 0)$:</p>
+      <div class="math-block">
+        M_pivot = T(x_p, y_p) × R(θ) × T(-x_p, -y_p)
+      </div>
+
+      <h3 class="subheading">3.5 Hierarchical Forward Kinematics</h3>
+      <p>Parent-child joint chaining ensures child limbs inherit parent motion:</p>
+      <div class="math-block">
+        M_world(child) = M_world(parent) × M_local(child)
+      </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- 4. VIVA PRESENTATION SCRIPT -->
+    <div class="section-card">
+      <h2 class="section-heading">4. Viva Defense Script (4 Members)</h2>
+
+      <div class="qa-box" style="border-left: 4px solid var(--coral);">
+        <div class="qa-q">Act 1: Team Introduction (0:00 – 1:30) — Speaker: Member 1</div>
+        <p class="qa-a">"Respected examiners: Our project is the <strong>2D Animation Studio</strong>. Rather than using drawing libraries as a black box, our objective was to build an expressive animation suite whose every pixel and transformation is governed by core Computer Graphics mathematics. We have organized our presentation into four distinct feature subsystems: the Visual Creation Studio &amp; Graphics Lab by myself, the Stage Canvas &amp; Grouping by Member 2, 3×3 Matrices &amp; Rigging by Member 3, and the 24 FPS Sequencer, Web Audio &amp; Export Pipeline by Member 4."</p>
+      </div>
+
+      <div class="qa-box" style="border-left: 4px solid var(--coral);">
+        <div class="qa-q">Act 2: Visual Creation Studio, Graphics Lab &amp; Backgrounds (1:30 – 4:30) — Speaker: Member 1</div>
+        <p class="qa-a">"I built the visual creation and shape rasterization features of the website. <em>(Action: Clicks 'CG Algorithms' in header)</em>. In our Interactive Graphics Lab, users can test Bresenham vs DDA, Midpoint Circle with 8-way symmetry, and Midpoint Ellipse, viewing the exact plotted pixel coordinates and decision variable updates live on a pixel grid. <em>(Action: Clicks 'Background' and 'Templates')</em>. I also built the Scenic Backgrounds Studio (with day/night/space animated presets) and pre-rigged character template library."</p>
+      </div>
+
+      <div class="qa-box" style="border-left: 4px solid var(--lavender);">
+        <div class="qa-q">Act 3: Stage Canvas, Pan/Zoom &amp; Grouping (4:30 – 7:30) — Speaker: Member 2</div>
+        <p class="qa-a">"I developed the interactive stage canvas engine, viewport navigation, and multi-object selection. <em>(Action: Pans and zooms canvas)</em>. We support infinite stage panning and 25%–400% zoom using affine viewport transforms ($P_{\text{screen}} = (P_{\text{world}} - \text{Pan}) \times \text{Zoom}$). <em>(Action: Marquee drags over objects)</em>. I built rubber-band box selection, dynamic AABB bounding boxes, and Grouping (<code>Ctrl + G</code>) and Ungrouping (<code>Ctrl + Shift + G</code>)."</p>
+      </div>
+
+      <div class="qa-box" style="border-left: 4px solid var(--teal);">
+        <div class="qa-q">Act 4: 3×3 Matrices, Inspector &amp; Rigging (7:30 – 10:30) — Speaker: Member 3</div>
+        <p class="qa-a">"I built the transformation linear algebra engine, Right Inspector, and Forward Kinematics. <em>(Action: Selects object, points to Right Inspector)</em>. Notice the live 3×3 Homogeneous Matrix: as I adjust rotation, scale, or shear sliders, the matrix updates numerically in real time. I also implemented custom pivot points (rotate around elbows/knees rather than center) and Forward Kinematics ($M_{\text{world}} = M_{\text{parent}} \times M_{\text{local}}$) so moving the torso moves the arms and legs automatically."</p>
+      </div>
+
+      <div class="qa-box" style="border-left: 4px solid var(--yellow);">
+        <div class="qa-q">Act 5: 24 FPS Timeline, Audio Sequencer &amp; GIF Exporter (10:30 – 13:30) — Speaker: Member 4</div>
+        <p class="qa-a">"I developed the animation engine, sound studio, client-side exporter, and cloud persistence. <em>(Action: Hits Play on bottom timeline)</em>. The timeline runs at locked 24 FPS with parametric Easing Curves (Linear, Ease-In/Out, Elastic). <em>(Action: Clicks 'Audio')</em>. I built a 100% offline Web Audio Synthesizer generating Chiptune, Lo-Fi, and frame-accurate sound cues with a live waveform visualizer. <em>(Action: Clicks 'Export')</em>. Our export engine features a custom client-side GIF89a encoder using 3-3-2 RGB color quantization and LZW bitstream compression without external dependencies."</p>
+      </div>
+    </div>
+
+    <!-- 5. CONCLUSION -->
+    <div class="section-card">
+      <h2 class="section-heading">5. Word Document &amp; Conclusion</h2>
+      <p>The companion Microsoft Word document has been compiled and saved to: <strong><code>PROJECT_VIVA_DOCUMENTATION_4_MEMBERS.docx</code></strong>.</p>
+      <p style="font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 14px; margin-top: 20px;">
+        Generated for Academic Project Viva Defense • Repository: <code>Nikhilsakpal07/2D-Animation-studio</code> • Version: 0.1.0 (Next.js 16.4.3)
+      </p>
+    </div>
+
+  </div>
+
+</body>
+</html>

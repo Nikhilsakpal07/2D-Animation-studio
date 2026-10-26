@@ -32,6 +32,7 @@ export interface CGProjectData {
   customAssets: AssetDef[]
   audioTrack?: AudioTrackConfig | null
   soundCues?: SoundCue[]
+  durationSeconds?: number
 }
 
 /**
@@ -47,6 +48,7 @@ export function createProjectPayload(
     customAssets: AssetDef[]
     audioTrack?: AudioTrackConfig | null
     soundCues?: SoundCue[]
+    durationSeconds?: number
   }
 ): CGProjectData {
   return {
@@ -60,6 +62,7 @@ export function createProjectPayload(
     customAssets: params.customAssets || [],
     audioTrack: params.audioTrack || null,
     soundCues: params.soundCues || [],
+    durationSeconds: params.durationSeconds || 7,
   }
 }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft, ChevronDown, Eye, Lock, Move, Pause, Play, Plus,
   RotateCw, Square, ZoomIn, ZoomOut, Maximize2, SlidersHorizontal, Trash2,
@@ -46,6 +46,11 @@ interface TimelinePanelProps {
   onAddSoundCue?: (cue: SoundCue) => void
   onUpdateSoundCue?: (id: string, updates: Partial<SoundCue>) => void
   onDeleteSoundCue?: (id: string) => void
+
+  // Dynamic Duration
+  durationSeconds?: number
+  setDurationSeconds?: (seconds: number) => void
+  totalFrames?: number
 }
 
 export default function TimelinePanel({
@@ -74,6 +79,9 @@ export default function TimelinePanel({
   onAddSoundCue,
   onUpdateSoundCue,
   onDeleteSoundCue,
+  durationSeconds = 7,
+  setDurationSeconds,
+  totalFrames: propTotalFrames,
 }: TimelinePanelProps) {
   const sequencerRef = useRef<HTMLDivElement>(null)
   const draggingCueRef = useRef<{
@@ -91,6 +99,24 @@ export default function TimelinePanel({
 
   const selectedObj = objects.find(o => o.id === selectedId)
 
+  const actualDuration = durationSeconds || 7
+  const maxFrames = propTotalFrames || Math.max(24, Math.round(actualDuration * 24))
+  const [durationMenuOpen, setDurationMenuOpen] = useState(false)
+  const [customSecs, setCustomSecs] = useState('')
+  const durationMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (durationMenuRef.current && !durationMenuRef.current.contains(e.target as Node)) {
+        setDurationMenuOpen(false)
+      }
+    }
+    if (durationMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [durationMenuOpen])
+
   // Calculate formatted timecode (00:00:00)
   const totalSeconds = frame / 24
   const minutes = Math.floor(totalSeconds / 60)
@@ -98,11 +124,30 @@ export default function TimelinePanel({
   const centis = Math.floor((totalSeconds % 1) * 100)
   const timecodeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(centis).padStart(2, '0')}`
 
+  // Calculate total duration timecode
+  const maxM = Math.floor(actualDuration / 60)
+  const maxS = Math.floor(actualDuration % 60)
+  const maxC = Math.floor((actualDuration % 1) * 100)
+  const maxTimecodeStr = `${String(maxM).padStart(2, '0')}:${String(maxS).padStart(2, '0')}:${String(maxC).padStart(2, '0')}`
+
+  // Intelligent ruler ticks matching duration
+  const tickFrames = React.useMemo(() => {
+    const list: number[] = [0]
+    const stepSec = actualDuration <= 10 ? 1 : actualDuration <= 20 ? 2 : actualDuration <= 60 ? 5 : 10
+    for (let s = stepSec; s < actualDuration; s += stepSec) {
+      list.push(Math.round(s * 24))
+    }
+    if (!list.includes(maxFrames)) {
+      list.push(maxFrames)
+    }
+    return list
+  }, [actualDuration, maxFrames])
+
   function scrubToEvent(e: React.PointerEvent<HTMLDivElement>) {
     if (!sequencerRef.current) return
     const rect = sequencerRef.current.getBoundingClientRect()
     const clickX = Math.max(0, Math.min(rect.width, e.clientX - rect.left))
-    const newFrame = Math.round((clickX / rect.width) * 168)
+    const newFrame = Math.round((clickX / rect.width) * maxFrames)
     setFrame(newFrame)
   }
 
@@ -116,7 +161,7 @@ export default function TimelinePanel({
       if (!sequencerRef.current) return
       const rect = sequencerRef.current.getBoundingClientRect()
       const clickX = Math.max(0, Math.min(rect.width, ev.clientX - rect.left))
-      const newFrame = Math.round((clickX / rect.width) * 168)
+      const newFrame = Math.round((clickX / rect.width) * maxFrames)
       setFrame(newFrame)
     }
     const onUp = () => {
@@ -152,13 +197,13 @@ export default function TimelinePanel({
       if (!draggingBlockRef.current || !sequencerRef.current) return
       const info = draggingBlockRef.current
       const deltaX = ev.clientX - info.startX
-      const deltaFrames = Math.round((deltaX / rect.width) * 168)
+      const deltaFrames = Math.round((deltaX / rect.width) * maxFrames)
 
       if (info.mode === 'resize-start') {
         const newStart = Math.max(0, Math.min(info.initEnd - 1, info.initStart + deltaFrames))
         onUpdateBlock(info.block.id, { startFrame: newStart })
       } else if (info.mode === 'resize-end') {
-        const newEnd = Math.max(info.initStart + 1, Math.min(168, info.initEnd + deltaFrames))
+        const newEnd = Math.max(info.initStart + 1, Math.min(maxFrames, info.initEnd + deltaFrames))
         onUpdateBlock(info.block.id, { endFrame: newEnd })
       } else if (info.mode === 'move') {
         const duration = info.initEnd - info.initStart
@@ -168,9 +213,9 @@ export default function TimelinePanel({
           newStart = 0
           newEnd = duration
         }
-        if (newEnd > 168) {
-          newEnd = 168
-          newStart = 168 - duration
+        if (newEnd > maxFrames) {
+          newEnd = maxFrames
+          newStart = maxFrames - duration
         }
         onUpdateBlock(info.block.id, { startFrame: newStart, endFrame: newEnd })
       }
@@ -203,7 +248,7 @@ export default function TimelinePanel({
       if (!draggingCueRef.current || !sequencerRef.current) return
       const rect = sequencerRef.current.getBoundingClientRect()
       const clickX = Math.max(0, Math.min(rect.width, ev.clientX - rect.left))
-      const newFrame = Math.max(0, Math.min(168, Math.round((clickX / rect.width) * 168)))
+      const newFrame = Math.max(0, Math.min(maxFrames, Math.round((clickX / rect.width) * maxFrames)))
       if (onUpdateSoundCue) {
         onUpdateSoundCue(cue.id, { frame: newFrame })
       }
@@ -225,16 +270,16 @@ export default function TimelinePanel({
     if (!sequencerRef.current) return
     const rect = sequencerRef.current.getBoundingClientRect()
     const clickX = Math.max(0, Math.min(rect.width, e.clientX - rect.left))
-    const clickedFrame = Math.max(0, Math.min(168, Math.round((clickX / rect.width) * 168)))
+    const clickedFrame = Math.max(0, Math.min(maxFrames, Math.round((clickX / rect.width) * maxFrames)))
     setFrame(clickedFrame)
   }
 
   return (
-    <section className="timeline" style={{ height: '210px', display: 'flex', flexDirection: 'column' }}>
+    <section className="timeline" style={{ height: '210px', display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 100, overflow: 'visible' }}>
       {/* 
         Clean, non-overlapping header row directly above TRACKS and frame ruler.
       */}
-      <div className="timeline-head">
+      <div className="timeline-head" style={{ overflow: 'visible', position: 'relative', zIndex: 100 }}>
         {/* Left: Title & Add Action Block */}
         <div className="timeline-title">
           <h2>Timeline</h2>
@@ -286,15 +331,15 @@ export default function TimelinePanel({
           </button>
 
           <span className="timecode">
-            {timecodeStr} <small>/ 00:07:00</small>
+            {timecodeStr} <small>/ {maxTimecodeStr}</small>
           </span>
           <span className="framecode">
-            Frame {frame} <small>/ 168</small>
+            Frame {frame} <small>/ {maxFrames}</small>
           </span>
         </div>
 
         {/* Right: Tools & Duration */}
-        <div className="timeline-tools">
+        <div className="timeline-tools" style={{ overflow: 'visible', position: 'relative', zIndex: 100 }}>
           <button title="Zoom Out">
             <ZoomOut size={14} />
           </button>
@@ -302,9 +347,117 @@ export default function TimelinePanel({
           <button title="Zoom In">
             <ZoomIn size={14} />
           </button>
-          <button className="duration">
-            7s <ChevronDown size={13} />
-          </button>
+
+          {/* Interactive Duration Dropdown */}
+          <div style={{ position: 'relative', zIndex: 100 }} ref={durationMenuRef}>
+            <button
+              className="duration"
+              onClick={() => setDurationMenuOpen(v => !v)}
+              title="Change animation duration in seconds"
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+            >
+              {actualDuration}s <ChevronDown size={13} />
+            </button>
+
+            {durationMenuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  right: 0,
+                  background: '#FFFDF9',
+                  border: '1px solid #D8CFC0',
+                  borderRadius: '9px',
+                  boxShadow: '0 10px 30px rgba(48, 46, 53, 0.22)',
+                  width: '170px',
+                  padding: '9px',
+                  zIndex: 99999,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '5px',
+                }}
+              >
+                <div style={{ fontSize: '9px', fontWeight: 700, color: '#978C82', letterSpacing: '0.08em', marginBottom: '2px' }}>
+                  DURATION (SECONDS)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
+                  {[3, 5, 7, 10, 15, 20, 30, 45, 60].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setDurationSeconds?.(s)
+                        setDurationMenuOpen(false)
+                      }}
+                      style={{
+                        padding: '4px 0',
+                        fontSize: '11px',
+                        fontWeight: actualDuration === s ? 700 : 500,
+                        background: actualDuration === s ? 'var(--coral)' : '#F2ECE2',
+                        color: actualDuration === s ? '#fff' : 'var(--ink)',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {s}s
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    placeholder="Custom s"
+                    value={customSecs}
+                    onChange={e => setCustomSecs(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const val = parseInt(customSecs, 10)
+                        if (val && val > 0 && val <= 120) {
+                          setDurationSeconds?.(val)
+                          setCustomSecs('')
+                          setDurationMenuOpen(false)
+                        }
+                      }
+                    }}
+                    style={{
+                      width: '65%',
+                      background: '#FAF6F0',
+                      border: '1px solid #D6CABA',
+                      borderRadius: '5px',
+                      padding: '3px 6px',
+                      fontSize: '11px',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const val = parseInt(customSecs, 10)
+                      if (val && val > 0 && val <= 120) {
+                        setDurationSeconds?.(val)
+                        setCustomSecs('')
+                        setDurationMenuOpen(false)
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      background: '#7B6DAF',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '5px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Set
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -489,10 +642,24 @@ export default function TimelinePanel({
           onPointerDown={handleScrubStart}
         >
           {/* Frame Ruler */}
-          <div className="ruler" onPointerDown={scrubToEvent}>
-            {[0, 24, 48, 72, 96, 120, 144, 168].map(n => (
-              <span key={n}>{n}</span>
-            ))}
+          <div className="ruler" onPointerDown={scrubToEvent} style={{ position: 'relative', height: '31px' }}>
+            {tickFrames.map(n => {
+              const pct = (n / maxFrames) * 100
+              return (
+                <span
+                  key={n}
+                  style={{
+                    position: 'absolute',
+                    left: `${pct}%`,
+                    transform: pct === 0 ? 'translateX(0)' : pct >= 98 ? 'translateX(-100%)' : 'translateX(-50%)',
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {n}
+                </span>
+              )
+            })}
           </div>
 
           {/* Pinned Audio Track Sequencer Lane with Waveform & Sound Cues */}
@@ -563,7 +730,7 @@ export default function TimelinePanel({
 
             {/* Frame Sound Cue Markers (♪ badges) */}
             {soundCues.map(cue => {
-              const leftPct = (cue.frame / 168) * 100
+              const leftPct = (cue.frame / maxFrames) * 100
               return (
                 <div
                   key={cue.id}
@@ -641,8 +808,8 @@ export default function TimelinePanel({
                 <div className="sequence-line" />
 
                 {blocks.map(block => {
-                  const leftPct = (block.startFrame / 168) * 100
-                  const widthPct = Math.max(3, ((block.endFrame - block.startFrame) / 168) * 100)
+                  const leftPct = (block.startFrame / maxFrames) * 100
+                  const widthPct = Math.max(3, ((block.endFrame - block.startFrame) / maxFrames) * 100)
                   const isSelectedBlock = selectedBlockId === block.id
                   const color = block.color || getBlockColor(block.actionType)
                   const label = getBlockLabel(block, obj, blocks)
@@ -728,7 +895,7 @@ export default function TimelinePanel({
           <div
             className="playhead"
             style={{
-              left: `${(frame / 168) * 100}%`,
+              left: `${(frame / maxFrames) * 100}%`,
               transition: playing ? 'none' : 'left 0.05s ease-out',
             }}
           >
